@@ -26,7 +26,7 @@ type node struct {
 	isWild   bool    // 是否精确匹配，part 含有 : 或 * 时为true
 }
 
-// 第一个匹配成功的节点，用于插入
+// matchChild 第一个匹配成功的节点，用于插入
 func (n *node) matchChild(part string) *node {
 	for _, child := range n.children {
 		if child.part == part || child.isWild {
@@ -36,7 +36,7 @@ func (n *node) matchChild(part string) *node {
 	return nil
 }
 
-// 所有匹配成功的节点，用于查找
+// matchChildren 所有匹配成功的节点，用于查找
 func (n *node) matchChildren(part string) []*node {
 	nodes := make([]*node, 0)
 	for _, child := range n.children {
@@ -47,34 +47,39 @@ func (n *node) matchChildren(part string) []*node {
 	return nodes
 }
 
-func (n *node) insert(pattern string, parts []string, height int) {
-	if len(parts) == height {
+// insert 插入patten
+func (n *node) insert(pattern string, parts []string, depth int) {
+	if len(parts) == depth {
 		n.pattern = pattern
 		return
 	}
 
-	part := parts[height]
+	part := parts[depth]
+	// 匹配到一个子节点,用于插入
 	child := n.matchChild(part)
 	if child == nil {
+		// 当子节点不存在时,创建
 		child = &node{part: part, isWild: part[0] == ':' || part[0] == '*'}
 		n.children = append(n.children, child)
 	}
-	child.insert(pattern, parts, height+1)
+	// 进一步插入子子节点
+	child.insert(pattern, parts, depth+1)
 }
 
-func (n *node) search(parts []string, height int) *node {
-	if len(parts) == height || strings.HasPrefix(n.part, "*") {
+// search 搜索节点
+func (n *node) search(parts []string, depth int) *node {
+	if len(parts) == depth || strings.HasPrefix(n.part, "*") {
 		if n.pattern == "" {
 			return nil
 		}
 		return n
 	}
 
-	part := parts[height]
+	part := parts[depth]
 	children := n.matchChildren(part)
 
 	for _, child := range children {
-		result := child.search(parts, height+1)
+		result := child.search(parts, depth+1)
 		if result != nil {
 			return result
 		}

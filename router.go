@@ -19,24 +19,40 @@ package zero
 
 import (
 	"log"
-	"net/http"
 	"strings"
 )
 
+// 支持的请求方式
+const (
+	GET     = "GET"
+	HEAD    = "HEAD"
+	POST    = "POST"
+	PUT     = "PUT"
+	PATCH   = "PATCH" // RFC 5789
+	DELETE  = "DELETE"
+	CONNECT = "CONNECT"
+	OPTIONS = "OPTIONS"
+	TRACE   = "TRACE"
+)
+
+// router 路由
 type router struct {
 	roots    map[string]*node
-	handlers map[string]HandlerFunc
+	handlers map[string][]HandlerFunc
 }
 
+// newRouter 新建路由
 func newRouter() *router {
 	return &router{
 		roots:    make(map[string]*node),
-		handlers: make(map[string]HandlerFunc),
+		handlers: make(map[string][]HandlerFunc),
 	}
 }
 
-// Only one * is allowed
+// parsePattern 解析Pattern
+// 只允许一个*存在
 func parsePattern(pattern string) []string {
+	// <path0>/<path1>/<path2>/*
 	vs := strings.Split(pattern, "/")
 
 	parts := make([]string, 0)
@@ -51,31 +67,37 @@ func parsePattern(pattern string) []string {
 	return parts
 }
 
-func (r *router) addRoute(method string, pattern string, handler HandlerFunc) {
+// addRoute 添加一个新的路由
+func (r *router) addRoute(method string, pattern string, handlers ...HandlerFunc) {
 	log.Printf("Route %4s - %s", method, pattern)
 	parts := parsePattern(pattern)
-	key := method + "." + pattern
+	key := method + "-" + pattern
 	_, ok := r.roots[method]
 	if !ok {
+		// 路由根节点
 		r.roots[method] = &node{}
 	}
+	// 插入路径
 	r.roots[method].insert(pattern, parts, 0)
-	r.handlers[key] = handler
+	r.handlers[key] = handlers
 }
 
-func (r *router) getRoute(method string, path string) (*node, map[string]string) {
-	searchParts := parsePattern(path)
-	params := make(map[string]string)
+// getRoute 获取路由节点和路径参数
+func (r *router) getRoute(method string, path string) (node *node, params map[string]string) {
 	root, ok := r.roots[method]
-
 	if !ok {
-		return nil, nil
+		return
 	}
 
-	n := root.search(searchParts, 0)
+	searchParts := parsePattern(path)
+	// 存储路径参数
+	params = make(map[string]string)
 
-	if n != nil {
-		parts := parsePattern(n.pattern)
+	// 获取路由节点
+	node = root.search(searchParts, 0)
+
+	if node != nil {
+		parts := parsePattern(node.pattern)
 		for index, part := range parts {
 			if part[0] == ':' {
 				params[part[1:]] = searchParts[index]
@@ -85,19 +107,23 @@ func (r *router) getRoute(method string, path string) (*node, map[string]string)
 				break
 			}
 		}
-		return n, params
+		return
 	}
-
-	return nil, nil
+	return
 }
 
 func (r *router) handle(c *Context) {
+	// 获取路由
 	n, params := r.getRoute(c.Method, c.Path)
 	if n != nil {
 		c.Params = params
 		key := c.Method + "-" + n.pattern
-		r.handlers[key](c)
+		for _, handler := range r.handlers[key] {
+			handler(c)
+		}
 	} else {
-		c.String(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
+		panic("")
+		//c.String(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
 	}
+	c.Next()
 }

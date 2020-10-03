@@ -29,16 +29,20 @@ func newTestRouter() *router {
 	r.addRoute("GET", "/hello/b/c", nil)
 	r.addRoute("GET", "/hi/:name", nil)
 	r.addRoute("GET", "/assets/*filepath", nil)
+	r.addRoute("GET", "/test/:id/:name", nil)
 	return r
 }
 
 func Test_parsePattern(t *testing.T) {
-
+	var s []string
+	for i, ss := range s {
+		fmt.Println(i, ss)
+	}
 }
 
 func Test_router_getRoute(t *testing.T) {
 	r := newTestRouter()
-	n, ps := r.getRoute("GET", "/hello/geektutu")
+	n, ps := r.getRoute("GET", "/hello/chenquan")
 
 	if n == nil {
 		t.Fatal("nil shouldn't be returned")
@@ -48,11 +52,19 @@ func Test_router_getRoute(t *testing.T) {
 		t.Fatal("should match /hello/:name")
 	}
 
-	if ps["name"] != "geektutu" {
-		t.Fatal("name should be equal to 'geektutu'")
+	if ps["name"] != "chenquan" {
+		t.Fatal("name should be equal to 'chenquan'")
 	}
-
 	fmt.Printf("matched path: %s, params['name']: %s\n", n.pattern, ps["name"])
+	n, ps = r.getRoute("GET", "/test/11/chenquan")
+	if ps["id"] != "11" {
+		t.Fatal("name should be equal to 'chenquan'")
+	}
+	if ps["name"] != "chenquan" {
+		t.Fatal("name should be equal to 'chenquan'")
+	}
+	fmt.Printf("matched path: %s, params['id']: %s and ['name']: %s\n", n.pattern, ps["id"], ps["name"])
+
 }
 
 func Test_router_handle(t *testing.T) {
