@@ -17,15 +17,8 @@
 
 package zero
 
-import (
-	"log"
-	"time"
-)
+import "errors"
 
-func LoggerDefault() HandlerFunc {
-	return func(c *Context) {
-		t := time.Now()
-		c.Next()
-		log.Printf("[ZERO] URL [%d] %s in %v", c.StatusCode, c.Req.RequestURI, time.Since(t))
-	}
-}
+var (
+	NotFoundError = errors.New("404 NOT FOUND")
+)

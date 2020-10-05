@@ -62,8 +62,8 @@ func newContext(w http.ResponseWriter, req *http.Request) *Context {
 // Next 执行下一个中间件
 func (c *Context) Next() {
 	c.index++
-	s := len(c.handlers)
-	for ; c.index < s; c.index++ {
+	length := len(c.handlers)
+	for ; c.index < length; c.index++ {
 		c.handlers[c.index](c)
 	}
 }
