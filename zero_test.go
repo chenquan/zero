@@ -27,18 +27,30 @@ func TestNew(t *testing.T) {
 	engine.Use(func(ctx *Context) {
 		fmt.Println("第一层")
 		ctx.Next()
+		fmt.Println("第一层-结束")
+
 	})
 	v1 := engine.Group("/test")
 	v1.Use(func(ctx *Context) {
 		fmt.Println("第一层-v1")
 		ctx.Next()
+		fmt.Println("第一层-v1-结束")
 
 	})
 	{
+		v1.GET("/", func(ctx *Context) {
+
+			ctx.JSON(200, "test")
+		})
+
 		v1.GET("/test", func(ctx *Context) {
 			fmt.Println("第一层-v1-test")
 			//context.Status(200)
+			//ctx.JSON(200, "hhhhh")
+		}, func(ctx *Context) {
+			fmt.Println("第一层-v1-test000")
 			ctx.JSON(200, "hhhhh")
+
 		})
 	}
 	engine.Run(":8080")

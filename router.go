@@ -19,7 +19,8 @@ package zero
 
 import (
 	"log"
-	"net/http"
+	"reflect"
+	"runtime"
 	"strings"
 )
 
@@ -70,7 +71,18 @@ func parsePattern(pattern string) []string {
 
 // addRoute 添加一个新的路由
 func (r *router) addRoute(method string, pattern string, handlers ...HandlerFunc) {
-	log.Printf("Route %4s - %s, handlers(%d)", method, pattern, len(handlers))
+	var fns []string
+	for _, handler := range handlers {
+		fn := runtime.FuncForPC(reflect.ValueOf(handler).Pointer()).Name()
+		fns = append(fns, fn)
+	}
+	handlerNames := ""
+	if len(fns) != 0 {
+
+		handlerNames = ": " + strings.Join(fns, ", ")
+	}
+	log.Printf("[ZERO] ROUTE %4s - %s, handlers(%d)%s", method, pattern, len(handlers), handlerNames)
+
 	parts := parsePattern(pattern)
 	key := method + "-" + pattern
 	_, ok := r.roots[method]
@@ -120,12 +132,10 @@ func (r *router) handle(c *Context) {
 		c.Params = params
 		key := c.Method + "-" + n.pattern
 		c.handlers = append(c.handlers, r.handlers[key]...)
-		//for _, handler := range r.handlers[key] {
-		//	handler(c)
-		//}
+
 	} else {
 		c.handlers = append(c.handlers, func(c *Context) {
-			c.String(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
+			panic(NotFoundError)
 		})
 	}
 	c.Next()
