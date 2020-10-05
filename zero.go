@@ -25,7 +25,7 @@ import (
 )
 
 // HandlerFunc defines the request handler used by gee
-type HandlerFunc func(*Context)
+type HandlerFunc func(ctx *Context)
 
 // Engine implement the interface of ServeHTTP
 type Engine struct {
@@ -56,7 +56,7 @@ func New() *Engine {
 	engine.groups = []*RouterGroup{engine.RouterGroup}
 	return engine
 }
-func NewDefault() *Engine {
+func Default() *Engine {
 	engine := New()
 	engine.Use(LoggerDefault(), Recovery())
 	return engine

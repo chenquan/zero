@@ -19,6 +19,7 @@ package zero
 
 import (
 	"log"
+	"net/http"
 	"strings"
 )
 
@@ -37,7 +38,7 @@ const (
 
 // router 路由
 type router struct {
-	roots    map[string]*node
+	roots    map[string]*node // key是网络请求方式
 	handlers map[string][]HandlerFunc
 }
 
@@ -69,13 +70,13 @@ func parsePattern(pattern string) []string {
 
 // addRoute 添加一个新的路由
 func (r *router) addRoute(method string, pattern string, handlers ...HandlerFunc) {
-	log.Printf("Route %4s - %s", method, pattern)
+	log.Printf("Route %4s - %s, handlers(%d)", method, pattern, len(handlers))
 	parts := parsePattern(pattern)
 	key := method + "-" + pattern
 	_, ok := r.roots[method]
 	if !ok {
 		// 路由根节点
-		r.roots[method] = &node{}
+		r.roots[method] = new(node)
 	}
 	// 插入路径
 	r.roots[method].insert(pattern, parts, 0)
@@ -118,12 +119,15 @@ func (r *router) handle(c *Context) {
 	if n != nil {
 		c.Params = params
 		key := c.Method + "-" + n.pattern
-		for _, handler := range r.handlers[key] {
-			handler(c)
-		}
+		c.handlers = append(c.handlers, r.handlers[key]...)
+		//for _, handler := range r.handlers[key] {
+		//	handler(c)
+		//}
 	} else {
-		panic("")
-		//c.String(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
+		c.handlers = append(c.handlers, func(c *Context) {
+			c.String(http.StatusNotFound, "404 NOT FOUND: %s\n", c.Path)
+		})
 	}
 	c.Next()
+
 }

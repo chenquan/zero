@@ -34,10 +34,7 @@ func newTestRouter() *router {
 }
 
 func Test_parsePattern(t *testing.T) {
-	var s []string
-	for i, ss := range s {
-		fmt.Println(i, ss)
-	}
+
 }
 
 func Test_router_getRoute(t *testing.T) {
